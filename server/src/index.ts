@@ -17,6 +17,9 @@ import { createConnection } from "typeorm";
 import { User } from "./entities/User";
 import { Post } from "./entities/Post";
 import path from "path";
+import { Updoot } from "./entities/Updoot";
+import { createUpdootLoader } from "./utils/createUpdootLoader";
+import { createUserLoader } from "./utils/createUserLoader";
 
 const main = async () => {
   const conn = await createConnection({
@@ -26,12 +29,15 @@ const main = async () => {
     password: "postgreserhere20",
     logging: true,
     synchronize: true,
-    // migrations: [path.join(__dirname, "./migrations/*")],
-    entities: [Post, User],
+    migrations: [path.join(__dirname, "./migrations/*")],
+    entities: [Post, User, Updoot],
   });
-  // await conn.runMigrations();
+  await conn.runMigrations();
+  //rerun
 
   const app = express();
+
+  // Post.delete({});
 
   const RedisStore = connectRedis(session);
   const redis = new Redis();
@@ -64,7 +70,13 @@ const main = async () => {
       resolvers: [HelloResolver, PostResolver, UserResolver],
       validate: false,
     }),
-    context: ({ req, res }) => ({ req, res, redis }),
+    context: ({ req, res }) => ({
+      req,
+      res,
+      redis,
+      userLoader: createUserLoader(),
+      updootLoader: createUpdootLoader(),
+    }),
   });
   apolloServer.applyMiddleware({
     app,
